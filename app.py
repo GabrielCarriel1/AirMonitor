@@ -5,6 +5,7 @@ import threading
 from collections import deque
 import sys
 import requests
+import os
 
 # --- Configuración del Puerto Serial de tu Arduino ---
 # ¡¡¡IMPORTANTE!!! Cambia 'COM6' al puerto COM correcto de tu Arduino Nano.
@@ -35,8 +36,8 @@ ser = None
 serial_lock = threading.Lock()
 
 # --- Configuración de Telegram ---
-TELEGRAM_TOKEN = '8158310204:AAGwoEiwqr157s7sOqLxIbsDsUHaHfQyYvw'
-TELEGRAM_CHAT_ID = '8153505350'
+TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '8158310204:AAGwoEiwqr157s7sOqLxIbsDsUHaHfQyYvw')
+TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '8153505350')
 CO_UMBRAL_ALERTA = 50  # ppm
 alerta_telegram_activa = False  # Para evitar mensajes repetidos
 
@@ -295,7 +296,8 @@ if __name__ == '__main__':
         # host='0.0.0.0' permite que la página sea accesible desde otros dispositivos en tu red local.
         # port=5000 es el puerto estándar de Flask.
         # debug=False y use_reloader=False son cruciales cuando usas hilos para evitar duplicaciones y errores.
-        app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+        port = int(os.environ.get("PORT", 5000))
+        app.run(host='0.0.0.0', port=port, debug=False, use_reloader=False)
     except KeyboardInterrupt:
         # Maneja la interrupción del teclado (Ctrl+C) para un cierre limpio
         print("\nServidor Flask detenido por el usuario.")
