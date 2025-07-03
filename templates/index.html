@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AirMonitor Pro - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/index.css">
+</head>
+<body>
+    <!-- Background Elements -->
+    <div class="background-elements">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <i class="fas fa-wind"></i>
+                <span>AirMonitor Pro</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" id="to-history-btn">
+                    <i class="fas fa-history"></i>
+                    <span class="btn-text">Historial</span>
+                </button>
+                <button class="btn btn-secondary" id="to-graphs-btn">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="btn-text">Gráficas</span>
+                </button>
+                <button class="btn btn-secondary" id="config-btn">
+                    <i class="fas fa-cog"></i>
+                    <span class="btn-text">Configuración</span>
+                </button>
+                <button class="btn btn-primary" id="darkmode-btn">
+                    <i class="fas fa-moon" id="darkmode-icon"></i>
+                    <span class="btn-text">Modo Oscuro</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Dashboard Title -->
+        <div class="dashboard-title">
+            <h1>Monitoreo de Calidad del Aire</h1>
+            <p> En tiempo real con Arduino Nano</p>
+        </div>
+
+        <!-- CO Alert -->
+        <div class="alert" id="alerta-co">
+            <i class="fas fa-exclamation-triangle"></i>
+            <div>
+                <strong>¡PELIGRO!</strong> El nivel de CO ha superado el umbral seguro.
+            </div>
+        </div>
+
+        <!-- Hardware Alert -->
+        <div class="alert alert-hardware" id="hardware-alert" style="display:none;">
+            <i class="fas fa-plug"></i>
+            <strong>¡Atención!</strong> El hardware (Arduino/sensores) no está conectado o no responde.
+        </div>
+
+        <!-- Main Metrics -->
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <div class="metric-info">
+                        <h3>Temperatura</h3>
+                        <div class="metric-value">
+                            <span id="temp-value">--</span>
+                            <span class="metric-unit">°C</span>
+                        </div>
+                    </div>
+                    <div class="metric-icon temperature">
+                        <i class="fas fa-thermometer-half"></i>
+                    </div>
+                </div>
+                <div class="metric-trend trend-neutral">
+                    <i class="fas fa-minus"></i>
+                    <span>Sin cambios</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <div class="metric-info">
+                        <h3>Humedad</h3>
+                        <div class="metric-value">
+                            <span id="hum-value">--</span>
+                            <span class="metric-unit">%</span>
+                        </div>
+                    </div>
+                    <div class="metric-icon humidity">
+                        <i class="fas fa-tint"></i>
+                    </div>
+                </div>
+                <div class="metric-trend trend-neutral">
+                    <i class="fas fa-minus"></i>
+                    <span>Sin cambios</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <div class="metric-info">
+                        <h3>Monóxido de Carbono</h3>
+                        <div class="metric-value">
+                            <span id="co-value">--</span>
+                            <span class="metric-unit">ppm</span>
+                        </div>
+                    </div>
+                    <div class="metric-icon co">
+                        <i class="fas fa-skull-crossbones"></i>
+                    </div>
+                </div>
+                <div class="metric-trend trend-neutral">
+                    <i class="fas fa-minus"></i>
+                    <span>Sin cambios</span>
+                </div>
+            </div>
+
+            <div class="metric-card">
+                <div class="metric-card-header">
+                    <div class="metric-info">
+                        <h3>Estado del Aire</h3>
+                        <div class="status-indicator status-ok" id="status-value">
+                            <i class="fas fa-check-circle"></i>
+                            <span>Cargando...</span>
+                        </div>
+                    </div>
+                    <div class="metric-icon status">
+                        <i class="fas fa-leaf"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <section class="performance-section">
+            <h2 class="section-title">
+                <i class="fas fa-tachometer-alt"></i>
+                Métricas de Rendimiento
+            </h2>
+            <div class="performance-grid">
+                <div class="performance-card">
+                    <div class="performance-value" id="dht-time-value">--</div>
+                    <div class="performance-label">Tiempo DHT11 (ms)</div>
+                </div>
+                <div class="performance-card">
+                    <div class="performance-value" id="mq7-time-value">--</div>
+                    <div class="performance-label">Tiempo MQ7 (μs)</div>
+                </div>
+                <div class="performance-card">
+                    <div class="performance-value" id="arduino-cycle-value">--</div>
+                    <div class="performance-label">Ciclo Arduino (ms)</div>
+                </div>
+                <div class="performance-card">
+                    <div class="performance-value" id="python-cycle-value">--</div>
+                    <div class="performance-label">Ciclo Python (μs)</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Last Updated -->
+        <div class="last-updated">
+            <i class="fas fa-clock"></i>
+            Última actualización: <span id="last-updated-time">--</span>
+        </div>
+    </main>
+
+    <!-- Configuration Modal -->
+    <div class="modal" id="config-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Configuración del Sistema</h2>
+                <button class="close-btn" id="close-modal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="config-form">
+                <div class="form-group">
+                    <label class="form-label" for="co-threshold">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Umbral de alerta de CO (ppm)
+                    </label>
+                    <input type="number" id="co-threshold" name="co-threshold" class="form-input" min="1" max="1000" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" for="update-interval">
+                        <i class="fas fa-sync-alt"></i>
+                        Intervalo de actualización (segundos)
+                    </label>
+                    <input type="number" id="update-interval" name="update-interval" class="form-input" min="1" max="3600" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-cancel" id="cancel-config">
+                        <i class="fas fa-times"></i>
+                        Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i>
+                        Guardar Configuración
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let updateInterval = 5000; // 5 segundos por defecto
+        let coThreshold = 50; // 50 ppm por defecto
+        let isDarkMode = false;
+        let updateTimer;
+
+        // Variables para guardar el último valor
+        let lastTemp = null;
+        let lastHum = null;
+        let lastCO = null;
+
+        // Elementos del DOM
+        const elements = {
+            tempValue: document.getElementById('temp-value'),
+            humValue: document.getElementById('hum-value'),
+            coValue: document.getElementById('co-value'),
+            statusValue: document.getElementById('status-value'),
+            dhtTimeValue: document.getElementById('dht-time-value'),
+            mq7TimeValue: document.getElementById('mq7-time-value'),
+            arduinoCycleValue: document.getElementById('arduino-cycle-value'),
+            pythonCycleValue: document.getElementById('python-cycle-value'),
+            lastUpdatedTime: document.getElementById('last-updated-time'),
+            alertaCO: document.getElementById('alerta-co'),
+            configModal: document.getElementById('config-modal'),
+            configForm: document.getElementById('config-form'),
+            coThresholdInput: document.getElementById('co-threshold'),
+            updateIntervalInput: document.getElementById('update-interval')
+        };
+
+        // Event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            setupEventListeners();
+            loadConfiguration();
+            startDataUpdates();
+        });
+
+        function setupEventListeners() {
+            // Botones de navegación
+            document.getElementById('to-history-btn').addEventListener('click', () => {
+                window.location.href = '/historial';
+            });
+
+            document.getElementById('to-graphs-btn').addEventListener('click', () => {
+                window.location.href = '/graficas';
+            });
+
+            // Modal de configuración
+            document.getElementById('config-btn').addEventListener('click', openConfigModal);
+            document.getElementById('close-modal').addEventListener('click', closeConfigModal);
+            document.getElementById('cancel-config').addEventListener('click', closeConfigModal);
+            
+            // Formulario de configuración
+            elements.configForm.addEventListener('submit', saveConfiguration);
+
+            // Modo oscuro
+            document.getElementById('darkmode-btn').addEventListener('click', toggleDarkMode);
+
+            // Cerrar modal al hacer clic fuera
+            elements.configModal.addEventListener('click', (e) => {
+                if (e.target === elements.configModal) {
+                    closeConfigModal();
+                }
+            });
+
+            // Escape para cerrar modal
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && elements.configModal.classList.contains('show')) {
+                    closeConfigModal();
+                }
+            });
+        }
+
+        function initializeApp() {
+            console.log('Inicializando AirQuality Pro...');
+            
+            // Cargar configuración desde localStorage
+            const savedThreshold = localStorage.getItem('coThreshold');
+            const savedInterval = localStorage.getItem('updateInterval');
+            const savedDarkMode = localStorage.getItem('darkMode');
+
+            if (savedThreshold) coThreshold = parseInt(savedThreshold);
+            if (savedInterval) updateInterval = parseInt(savedInterval) * 1000;
+            if (savedDarkMode === 'true') {
+                isDarkMode = true;
+                document.body.classList.add('dark-mode');
+            }
+
+            // Actualizar inputs del modal
+            elements.coThresholdInput.value = coThreshold;
+            elements.updateIntervalInput.value = updateInterval / 1000;
+        }
+
+        function loadConfiguration() {
+            // Aquí podrías cargar configuración desde el servidor si es necesario
+            console.log('Configuración cargada:', {
+                coThreshold: coThreshold,
+                updateInterval: updateInterval / 1000
+            });
+        }
+
+        function startDataUpdates() {
+            // Actualizar datos inmediatamente
+            updateData();
+            
+            // Configurar intervalo de actualización
+            if (updateTimer) clearInterval(updateTimer);
+            updateTimer = setInterval(updateData, updateInterval);
+        }
+
+        async function updateData() {
+            try {
+                const response = await fetch('/data');
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                updateMetrics(data);
+                updatePerformanceMetrics(data);
+                updateLastUpdatedTime();
+                checkCOAlert(data.co_ppm);
+                
+            } catch (error) {
+                console.error('Error al obtener datos:', error);
+                showErrorState();
+            }
+        }
+
+        function updateMetrics(data) {
+            // Comprobar si el hardware está desconectado o con error
+            const isHardwareError = (
+                data.temperatura === undefined || data.temperatura === null || data.temperatura === '--' || data.temperatura === 'N/A' || data.temperatura === 'Error' ||
+                data.humedad === undefined || data.humedad === null || data.humedad === '--' || data.humedad === 'N/A' || data.humedad === 'Error' ||
+                data.co_ppm === undefined || data.co_ppm === null || data.co_ppm === '--' || data.co_ppm === 'N/A' || data.co_ppm === 'Error'
+            );
+            const hardwareAlert = document.getElementById('hardware-alert');
+            if (isHardwareError) {
+                hardwareAlert.style.display = 'flex';
+            } else {
+                hardwareAlert.style.display = 'none';
+            }
+
+            // Actualizar valores principales
+            elements.tempValue.textContent = data.temperatura?.toFixed(1) || '--';
+            elements.humValue.textContent = data.humedad?.toFixed(1) || '--';
+            elements.coValue.textContent = data.co_ppm?.toFixed(2) || '--';
+            
+            // Tendencia Temperatura
+            const tempTrend = document.querySelectorAll('.metric-card')[0].querySelector('.metric-trend');
+            if (data.temperatura === undefined || data.temperatura === null || data.temperatura === '--' || isNaN(data.temperatura) || lastTemp === null) {
+                tempTrend.innerHTML = '<i class="fas fa-minus trend-neutral"></i><span>Sin cambios</span>';
+            } else if (data.temperatura > lastTemp) {
+                tempTrend.innerHTML = '<i class="fas fa-arrow-up trend-up"></i><span>Subió</span>';
+            } else if (data.temperatura < lastTemp) {
+                tempTrend.innerHTML = '<i class="fas fa-arrow-down trend-down"></i><span>Bajó</span>';
+            } else {
+                tempTrend.innerHTML = '<i class="fas fa-minus trend-neutral"></i><span>Sin cambios</span>';
+            }
+            lastTemp = (data.temperatura !== undefined && data.temperatura !== null && data.temperatura !== '--' && !isNaN(data.temperatura)) ? data.temperatura : lastTemp;
+
+            // Tendencia Humedad
+            const humTrend = document.querySelectorAll('.metric-card')[1].querySelector('.metric-trend');
+            if (data.humedad === undefined || data.humedad === null || data.humedad === '--' || isNaN(data.humedad) || lastHum === null) {
+                humTrend.innerHTML = '<i class="fas fa-minus trend-neutral"></i><span>Sin cambios</span>';
+            } else if (data.humedad > lastHum) {
+                humTrend.innerHTML = '<i class="fas fa-arrow-up trend-up"></i><span>Subió</span>';
+            } else if (data.humedad < lastHum) {
+                humTrend.innerHTML = '<i class="fas fa-arrow-down trend-down"></i><span>Bajó</span>';
+            } else {
+                humTrend.innerHTML = '<i class="fas fa-minus trend-neutral"></i><span>Sin cambios</span>';
+            }
+            lastHum = (data.humedad !== undefined && data.humedad !== null && data.humedad !== '--' && !isNaN(data.humedad)) ? data.humedad : lastHum;
+
+            // Tendencia CO
+            const coTrend = document.querySelectorAll('.metric-card')[2].querySelector('.metric-trend');
+            if (data.co_ppm === undefined || data.co_ppm === null || data.co_ppm === '--' || isNaN(data.co_ppm) || lastCO === null) {
+                coTrend.innerHTML = '<i class="fas fa-minus trend-neutral"></i><span>Sin cambios</span>';
+            } else if (data.co_ppm > lastCO) {
+                coTrend.innerHTML = '<i class="fas fa-arrow-up trend-up"></i><span>Subió</span>';
+            } else if (data.co_ppm < lastCO) {
+                coTrend.innerHTML = '<i class="fas fa-arrow-down trend-down"></i><span>Bajó</span>';
+            } else {
+                coTrend.innerHTML = '<i class="fas fa-minus trend-neutral"></i><span>Sin cambios</span>';
+            }
+            lastCO = (data.co_ppm !== undefined && data.co_ppm !== null && data.co_ppm !== '--' && !isNaN(data.co_ppm)) ? data.co_ppm : lastCO;
+
+            // Actualizar estado del aire
+            updateAirQualityStatus(data.co_ppm);
+        }
+
+        function updateAirQualityStatus(coValue) {
+            if (coValue === undefined || coValue === null) {
+                elements.statusValue.className = 'status-indicator status-ok';
+                elements.statusValue.innerHTML = '<i class="fas fa-question-circle"></i><span>Sin datos</span>';
+                return;
+            }
+
+            let statusClass, statusText, statusIcon;
+
+            if (coValue <= 9) {
+                statusClass = 'status-ok';
+                statusText = 'Excelente';
+                statusIcon = 'fas fa-check-circle';
+            } else if (coValue <= 35) {
+                statusClass = 'status-leve';
+                statusText = 'Bueno';
+                statusIcon = 'fas fa-thumbs-up';
+            } else if (coValue <= 50) {
+                statusClass = 'status-moderado';
+                statusText = 'Moderado';
+                statusIcon = 'fas fa-exclamation-circle';
+            } else if (coValue <= 100) {
+                statusClass = 'status-alto';
+                statusText = 'Alto';
+                statusIcon = 'fas fa-exclamation-triangle';
+            } else {
+                statusClass = 'status-peligroso';
+                statusText = 'Peligroso';
+                statusIcon = 'fas fa-skull-crossbones';
+            }
+
+            elements.statusValue.className = `status-indicator ${statusClass}`;
+            elements.statusValue.innerHTML = `<i class="${statusIcon}"></i><span>${statusText}</span>`;
+        }
+
+        function updatePerformanceMetrics(data) {
+            elements.dhtTimeValue.textContent = data.tiempo_dht || '--';
+            elements.mq7TimeValue.textContent = data.tiempo_mq7 || '--';
+            elements.arduinoCycleValue.textContent = data.tiempo_ciclo_arduino || '--';
+            elements.pythonCycleValue.textContent = data.tiempo_ciclo || '--';
+        }
+
+        function updateLastUpdatedTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            elements.lastUpdatedTime.textContent = timeString;
+        }
+
+        function checkCOAlert(coValue) {
+            if (coValue > coThreshold) {
+                elements.alertaCO.classList.add('show');
+            } else {
+                elements.alertaCO.classList.remove('show');
+            }
+        }
+
+        function showErrorState() {
+            elements.tempValue.textContent = '--';
+            elements.humValue.textContent = '--';
+            elements.coValue.textContent = '--';
+            elements.statusValue.className = 'status-indicator status-alto';
+            elements.statusValue.innerHTML = '<i class="fas fa-exclamation-triangle"></i><span>Error</span>';
+            elements.lastUpdatedTime.textContent = 'Error de conexión';
+        }
+
+        function openConfigModal() {
+            elements.configModal.classList.add('show');
+            elements.coThresholdInput.value = coThreshold;
+            elements.updateIntervalInput.value = updateInterval / 1000;
+            elements.coThresholdInput.focus();
+        }
+
+        function closeConfigModal() {
+            elements.configModal.classList.remove('show');
+        }
+
+        function saveConfiguration(e) {
+            e.preventDefault();
+            
+            const newThreshold = parseInt(elements.coThresholdInput.value);
+            const newInterval = parseInt(elements.updateIntervalInput.value) * 1000;
+
+            if (newThreshold > 0 && newInterval >= 1000) {
+                coThreshold = newThreshold;
+                updateInterval = newInterval;
+
+                // Guardar en localStorage
+                localStorage.setItem('coThreshold', coThreshold);
+                localStorage.setItem('updateInterval', updateInterval / 1000);
+
+                // Reiniciar actualizaciones con nuevo intervalo
+                startDataUpdates();
+
+                // Mostrar confirmación
+                showNotification('Configuración guardada exitosamente', 'success');
+                
+                closeConfigModal();
+            } else {
+                showNotification('Por favor, ingrese valores válidos', 'error');
+            }
+        }
+
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            
+            const icon = document.getElementById('darkmode-icon');
+            const btnText = document.querySelector('#darkmode-btn .btn-text');
+            
+            if (isDarkMode) {
+                icon.className = 'fas fa-sun';
+                btnText.textContent = 'Modo Claro';
+            } else {
+                icon.className = 'fas fa-moon';
+                btnText.textContent = 'Modo Oscuro';
+            }
+
+            localStorage.setItem('darkMode', isDarkMode);
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'}-circle"></i>
+                <span>${message}</span>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.classList.add('show');
+            }, 100);
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
+        // Funciones de utilidad
+        function formatNumber(value, decimals = 1) {
+            if (value === null || value === undefined) return '--';
+            return Number(value).toFixed(decimals);
+        }
+
+        function formatTimestamp(timestamp) {
+            if (!timestamp) return '--';
+            const date = new Date(timestamp);
+            return date.toLocaleString('es-ES');
+        }
+
+        // Manejo de errores de conexión
+        window.addEventListener('online', () => {
+            console.log('Conexión restaurada');
+            startDataUpdates();
+        });
+
+        window.addEventListener('offline', () => {
+            console.log('Conexión perdida');
+            showNotification('Conexión perdida. Los datos no se actualizarán.', 'error');
+        });
+
+        // Manejo de visibilidad de la página
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                if (updateTimer) clearInterval(updateTimer);
+            } else {
+                startDataUpdates();
+            }
+        });
+    </script>
+
+    <style>
+        /* Estilos adicionales para notificaciones */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            background: white;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 1001;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            border-left: 4px solid var(--primary);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification-success {
+            border-left-color: var(--success);
+            color: var(--success);
+        }
+
+        .notification-error {
+            border-left-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .notification-info {
+            border-left-color: var(--info);
+            color: var(--info);
+        }
+
+        /* Modo oscuro */
+        body.dark-mode {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #334155 100%);
+        }
+
+        body.dark-mode .metric-card,
+        body.dark-mode .performance-card,
+        body.dark-mode .last-updated {
+            background: rgba(15, 23, 42, 0.8);
+            border-color: rgba(100, 116, 139, 0.3);
+        }
+
+        body.dark-mode .header {
+            background: rgba(15, 23, 42, 0.8);
+            border-bottom-color: rgba(100, 116, 139, 0.3);
+        }
+
+        body.dark-mode .notification {
+            background: var(--gray-800);
+            color: white;
+        }
+
+        /* Animaciones mejoradas */
+        .metric-value {
+            transition: all 0.3s ease;
+        }
+
+        .metric-value.updated {
+            transform: scale(1.05);
+            color: var(--success);
+        }
+
+        /* Estados de carga */
+        .loading-shimmer {
+            background: linear-gradient(90deg, 
+                rgba(255,255,255,0.1) 25%, 
+                rgba(255,255,255,0.2) 50%, 
+                rgba(255,255,255,0.1) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+
+        /* Tendencias */
+        .trend-up { color: #16a34a; }
+        .trend-down { color: #dc2626; }
+        .trend-neutral { color: orange; }
+
+        .alert-hardware {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+            border-radius: 8px;
+            padding: 1rem 1.5rem;
+            margin: 1rem auto;
+            max-width: 600px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1.1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+            z-index: 1002;
+        }
+    </style>
+</body>
+</html>

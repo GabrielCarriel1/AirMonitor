@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gráficas en Tiempo Real - AirQuality Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/graficas.css">
+</head>
+<body>
+    <!-- Background Elements -->
+    <div class="background-elements">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <i class="fas fa-wind"></i>
+                <span>AirQuality Pro</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="window.location.href='/'">
+                    <i class="fas fa-home"></i>
+                    <span class="btn-text">Dashboard</span>
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='/historial'">
+                    <i class="fas fa-history"></i>
+                    <span class="btn-text">Historial</span>
+                </button>
+                <button class="btn btn-primary" id="darkmode-btn">
+                    <i class="fas fa-moon" id="darkmode-icon"></i>
+                    <span class="btn-text">Modo Oscuro</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1>📊 Gráficas en Tiempo Real</h1>
+        <div class="charts-container">
+            <div class="chart-box">
+                <div class="chart-title" data-type="temperature" style="color:#007bff;">
+                    🌡️ Temperatura (°C)
+                </div>
+                <div class="metric-value" id="temp-current">--°C</div>
+                <div class="chart-canvas">
+                    <canvas id="tempChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-box">
+                <div class="chart-title" data-type="humidity" style="color:#17a2b8;">
+                    💧 Humedad (%)
+                </div>
+                <div class="metric-value" id="hum-current">--%</div>
+                <div class="chart-canvas">
+                    <canvas id="humChart"></canvas>
+                </div>
+            </div>
+            <div class="chart-box">
+                <div class="chart-title" data-type="co" style="color:#dc3545;">
+                    ☁️ CO (ppm)
+                </div>
+                <div class="metric-value" id="co-current">-- ppm</div>
+                <div class="chart-canvas">
+                    <canvas id="coChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        // Variables globales
+        let isDarkMode = false;
+        let updateInterval = 5; // Valor por defecto
+        let updateIntervalId = null;
+        let tempChart, humChart, coChart;
+
+        // Función para alternar modo oscuro
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            
+            const icon = document.getElementById('darkmode-icon');
+            const btnText = document.querySelector('#darkmode-btn .btn-text');
+            
+            if (isDarkMode) {
+                icon.className = 'fas fa-sun';
+                btnText.textContent = 'Modo Claro';
+            } else {
+                icon.className = 'fas fa-moon';
+                btnText.textContent = 'Modo Oscuro';
+            }
+
+            localStorage.setItem('darkMode', isDarkMode);
+            
+            // Actualizar las gráficas con los nuevos colores
+            updateChartsTheme();
+        }
+
+        // Función para actualizar el tema de las gráficas
+        function updateChartsTheme() {
+            const gridColor = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+            const tickColor = isDarkMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)';
+            
+            // Actualizar opciones de todas las gráficas
+            [tempChart, humChart, coChart].forEach(chart => {
+                if (chart) {
+                    chart.options.scales.x.grid.color = gridColor;
+                    chart.options.scales.x.ticks.color = tickColor;
+                    chart.options.scales.y.grid.color = gridColor;
+                    chart.options.scales.y.ticks.color = tickColor;
+                    chart.update('none');
+                }
+            });
+        }
+
+        // Inicializar modo oscuro desde localStorage
+        function initDarkMode() {
+            const savedDarkMode = localStorage.getItem('darkMode');
+            if (savedDarkMode === 'true') {
+                isDarkMode = true;
+                document.body.classList.add('dark-mode');
+                const icon = document.getElementById('darkmode-icon');
+                const btnText = document.querySelector('#darkmode-btn .btn-text');
+                icon.className = 'fas fa-sun';
+                btnText.textContent = 'Modo Claro';
+                
+                // Actualizar las gráficas si ya están inicializadas
+                setTimeout(() => {
+                    if (tempChart && humChart && coChart) {
+                        updateChartsTheme();
+                    }
+                }, 100);
+            }
+        }
+
+        // Event listener para el botón de modo oscuro
+        document.addEventListener('DOMContentLoaded', function() {
+            initDarkMode();
+            document.getElementById('darkmode-btn').addEventListener('click', toggleDarkMode);
+        });
+
+        // Modo oscuro (manteniendo compatibilidad con el código existente)
+        const prefersDark = localStorage.getItem('darkMode') === 'true';
+        if (prefersDark && !document.body.classList.contains('dark-mode')) {
+            document.body.classList.add('dark-mode');
+        }
+
+        function updateCharts(historyData) {
+            const labels = historyData.map(entry => entry.timestamp || '');
+            const tempData = historyData.map(entry => parseFloat(entry.temperatura) || null);
+            const humData = historyData.map(entry => parseFloat(entry.humedad) || null);
+            const coData = historyData.map(entry => parseFloat(entry.co_ppm) || null);
+            
+            // Actualizar gráficas
+            tempChart.data.labels = labels;
+            tempChart.data.datasets[0].data = tempData;
+            tempChart.update('none');
+            
+            humChart.data.labels = labels;
+            humChart.data.datasets[0].data = humData;
+            humChart.update('none');
+            
+            coChart.data.labels = labels;
+            coChart.data.datasets[0].data = coData;
+            coChart.update('none');
+            
+            // Actualizar valores actuales
+            if (historyData.length > 0) {
+                const latest = historyData[historyData.length - 1];
+                updateCurrentValues(latest);
+            }
+        }
+
+        function updateCurrentValues(data) {
+            const tempElement = document.getElementById('temp-current');
+            const humElement = document.getElementById('hum-current');
+            const coElement = document.getElementById('co-current');
+            
+            if (tempElement && data.temperatura) {
+                tempElement.textContent = `${parseFloat(data.temperatura).toFixed(1)}°C`;
+                tempElement.style.animation = 'pulse 0.5s ease-in-out';
+                setTimeout(() => tempElement.style.animation = '', 500);
+            }
+            
+            if (humElement && data.humedad) {
+                humElement.textContent = `${parseFloat(data.humedad).toFixed(1)}%`;
+                humElement.style.animation = 'pulse 0.5s ease-in-out';
+                setTimeout(() => humElement.style.animation = '', 500);
+            }
+            
+            if (coElement && data.co_ppm) {
+                coElement.textContent = `${parseFloat(data.co_ppm).toFixed(2)} ppm`;
+                coElement.style.animation = 'pulse 0.5s ease-in-out';
+                setTimeout(() => coElement.style.animation = '', 500);
+            }
+        }
+
+        function fetchHistoryAndUpdateCharts() {
+            fetch('/history')
+                .then(res => res.json())
+                .then(data => {
+                    updateCharts(data.data || []);
+                });
+        }
+
+        function startAutoUpdate() {
+            if (updateIntervalId) clearInterval(updateIntervalId);
+            updateIntervalId = setInterval(fetchHistoryAndUpdateCharts, updateInterval * 1000);
+        }
+
+        // Inicializar gráficas con los datos iniciales
+        const historyData = JSON.parse('{{ history|tojson|safe }}');
+        const labels = historyData.map(entry => entry.timestamp || '');
+        const tempData = historyData.map(entry => parseFloat(entry.temperatura) || null);
+        const humData = historyData.map(entry => parseFloat(entry.humedad) || null);
+        const coData = historyData.map(entry => parseFloat(entry.co_ppm) || null);
+
+        // Configuración común para todas las gráficas
+        function getChartOptions() {
+            const gridColor = isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+            const tickColor = isDarkMode ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.6)';
+            
+            return {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: 'rgba(255,255,255,0.2)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            color: gridColor,
+                            lineWidth: 1
+                        },
+                        ticks: {
+                            color: tickColor,
+                            font: { size: 11 }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: gridColor,
+                            lineWidth: 1
+                        },
+                        ticks: {
+                            color: tickColor,
+                            font: { size: 11 }
+                        }
+                    }
+                },
+                elements: {
+                    point: {
+                        radius: 3,
+                        hoverRadius: 6,
+                        borderWidth: 2
+                    },
+                    line: {
+                        borderWidth: 3,
+                        tension: 0.4
+                    }
+                },
+                interaction: {
+                    intersect: false,
+                    mode: 'index'
+                }
+            };
+        }
+
+        tempChart = new Chart(document.getElementById('tempChart').getContext('2d'), {
+            type: 'line',
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    label: 'Temperatura (°C)', 
+                    data: tempData, 
+                    borderColor: '#007bff', 
+                    backgroundColor: 'rgba(0,123,255,0.1)', 
+                    fill: true,
+                    pointBackgroundColor: '#007bff',
+                    pointBorderColor: '#fff'
+                }] 
+            },
+            options: getChartOptions()
+        });
+
+        humChart = new Chart(document.getElementById('humChart').getContext('2d'), {
+            type: 'line',
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    label: 'Humedad (%)', 
+                    data: humData, 
+                    borderColor: '#17a2b8', 
+                    backgroundColor: 'rgba(23,162,184,0.1)', 
+                    fill: true,
+                    pointBackgroundColor: '#17a2b8',
+                    pointBorderColor: '#fff'
+                }] 
+            },
+            options: getChartOptions()
+        });
+
+        coChart = new Chart(document.getElementById('coChart').getContext('2d'), {
+            type: 'line',
+            data: { 
+                labels: labels, 
+                datasets: [{ 
+                    label: 'CO (ppm)', 
+                    data: coData, 
+                    borderColor: '#dc3545', 
+                    backgroundColor: 'rgba(220,53,69,0.1)', 
+                    fill: true,
+                    pointBackgroundColor: '#dc3545',
+                    pointBorderColor: '#fff'
+                }] 
+            },
+            options: getChartOptions()
+        });
+
+        // Mostrar valores iniciales
+        if (historyData.length > 0) {
+            updateCurrentValues(historyData[historyData.length - 1]);
+        }
+
+        // Aplicar tema inicial después de crear las gráficas
+        if (isDarkMode) {
+            updateChartsTheme();
+        }
+
+        // Al cargar la página, obtener el intervalo real desde el backend
+        fetch('/config')
+            .then(res => res.json())
+            .then(cfg => {
+                updateInterval = cfg.update_interval || 5;
+                startAutoUpdate();
+            });
+    </script>
+</body>
+</html> 

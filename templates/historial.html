@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Lecturas - AirQuality Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/historial.css">
+</head>
+<body>
+    <!-- Background Elements -->
+    <div class="background-elements">
+        <div class="floating-shapes">
+            <div class="shape"></div>
+            <div class="shape"></div>
+            <div class="shape"></div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-container">
+            <div class="logo">
+                <i class="fas fa-wind"></i>
+                <span>AirQuality Pro</span>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-secondary" onclick="window.location.href='/'">
+                    <i class="fas fa-home"></i>
+                    <span class="btn-text">Dashboard</span>
+                </button>
+                <button class="btn btn-secondary" onclick="window.location.href='/graficas'">
+                    <i class="fas fa-chart-line"></i>
+                    <span class="btn-text">Gráficas</span>
+                </button>
+                <button class="btn btn-primary" id="darkmode-btn">
+                    <i class="fas fa-moon" id="darkmode-icon"></i>
+                    <span class="btn-text">Modo Oscuro</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1>📊 Historial de Lecturas</h1>
+        <div class="filters-bar">
+            <label for="month-filter">Mes:</label>
+            <select id="month-filter">
+                <option value="">Todos</option>
+                <option value="01">Enero</option>
+                <option value="02">Febrero</option>
+                <option value="03">Marzo</option>
+                <option value="04">Abril</option>
+                <option value="05">Mayo</option>
+                <option value="06">Junio</option>
+                <option value="07">Julio</option>
+                <option value="08">Agosto</option>
+                <option value="09">Septiembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Noviembre</option>
+                <option value="12">Diciembre</option>
+            </select>
+            <label for="year-filter">Año:</label>
+            <select id="year-filter"></select>
+            <input type="text" id="search-input" placeholder="Buscar...">
+            <button id="clear-filters-btn" type="button" class="clear-filters-btn"><span class="icon">&#10006;</span> Limpiar filtros</button>
+            <button id="export-csv-btn" type="button" class="export-csv-btn"><span class="icon">&#128190;</span> Exportar a CSV</button>
+        </div>
+        <table id="history-table">
+            <thead>
+                <tr>
+                    <th>Hora</th>
+                    <th>Temperatura (°C)</th>
+                    <th>Humedad (%)</th>
+                    <th>CO (ppm)</th>
+                    <th>Estado</th>
+                    <th>MQ7 (Raw)</th>
+                </tr>
+            </thead>
+            <tbody id="history-table-body">
+                <!-- Filas generadas dinámicamente -->
+            </tbody>
+        </table>
+    </div>
+    <script>
+        // Variables globales para modo oscuro
+        let isDarkMode = false;
+
+        // Función para alternar modo oscuro
+        function toggleDarkMode() {
+            isDarkMode = !isDarkMode;
+            document.body.classList.toggle('dark-mode', isDarkMode);
+            
+            const icon = document.getElementById('darkmode-icon');
+            const btnText = document.querySelector('#darkmode-btn .btn-text');
+            
+            if (isDarkMode) {
+                icon.className = 'fas fa-sun';
+                btnText.textContent = 'Modo Claro';
+            } else {
+                icon.className = 'fas fa-moon';
+                btnText.textContent = 'Modo Oscuro';
+            }
+
+            localStorage.setItem('darkMode', isDarkMode);
+        }
+
+        // Inicializar modo oscuro desde localStorage
+        function initDarkMode() {
+            const savedDarkMode = localStorage.getItem('darkMode');
+            if (savedDarkMode === 'true') {
+                isDarkMode = true;
+                document.body.classList.add('dark-mode');
+                const icon = document.getElementById('darkmode-icon');
+                const btnText = document.querySelector('#darkmode-btn .btn-text');
+                icon.className = 'fas fa-sun';
+                btnText.textContent = 'Modo Claro';
+            }
+        }
+
+        // Event listener para el botón de modo oscuro
+        document.addEventListener('DOMContentLoaded', function() {
+            initDarkMode();
+            document.getElementById('darkmode-btn').addEventListener('click', toggleDarkMode);
+        });
+
+        // Modo oscuro (manteniendo compatibilidad con el código existente)
+        const prefersDark = localStorage.getItem('darkMode') === 'true';
+        if (prefersDark && !document.body.classList.contains('dark-mode')) {
+            document.body.classList.add('dark-mode');
+            isDarkMode = true;
+        }
+
+        // --- Filtros y búsqueda ---
+        let allHistory = [];
+        const monthFilter = document.getElementById('month-filter');
+        const yearFilter = document.getElementById('year-filter');
+        const searchInput = document.getElementById('search-input');
+        const tableBody = document.getElementById('history-table-body');
+        let lastFiltered = [];
+        let updateInterval = 5; // Valor por defecto
+        let updateIntervalId = null;
+
+        // Rellena el filtro de años según los datos
+        function fillYearFilter(history) {
+            const years = new Set();
+            history.forEach(entry => {
+                if (entry.timestamp) {
+                    const year = entry.timestamp.split(' ')[0].split('-')[0];
+                    years.add(year);
+                }
+            });
+            yearFilter.innerHTML = '<option value="">Todos</option>';
+            Array.from(years).sort().forEach(y => {
+                yearFilter.innerHTML += `<option value="${y}">${y}</option>`;
+            });
+        }
+
+        // Renderiza la tabla según los filtros y búsqueda
+        function renderTable() {
+            const month = monthFilter.value;
+            const year = yearFilter.value;
+            const search = searchInput.value.trim().toLowerCase();
+            tableBody.innerHTML = '';
+            let filtered = allHistory.filter(entry => {
+                let match = true;
+                if (year && entry.timestamp) {
+                    match = match && entry.timestamp.startsWith(year);
+                }
+                if (month && entry.timestamp) {
+                    match = match && entry.timestamp.split('-')[1] === month;
+                }
+                if (search) {
+                    match = match && Object.values(entry).some(val =>
+                        (val !== null && val !== undefined && String(val).toLowerCase().includes(search))
+                    );
+                }
+                return match;
+            });
+            lastFiltered = filtered;
+            filtered.forEach(entry => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${entry.timestamp || 'N/A'}</td>
+                    <td>${entry.temperatura || 'N/A'}</td>
+                    <td>${entry.humedad || 'N/A'}</td>
+                    <td>${entry.co_ppm || 'N/A'}</td>
+                    <td class="status-${(entry.estado_aire||'').toLowerCase()}">${entry.estado_aire || 'N/A'}</td>
+                    <td>${entry.raw_mq7 || 'N/A'}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Obtiene los datos más recientes del backend
+        function fetchHistory() {
+            fetch('/history')
+                .then(res => res.json())
+                .then(data => {
+                    allHistory = data.data || [];
+                    fillYearFilter(allHistory);
+                    renderTable();
+                });
+        }
+
+        // Iniciar o reiniciar el intervalo de actualización
+        function startAutoUpdate() {
+            if (updateIntervalId) clearInterval(updateIntervalId);
+            updateIntervalId = setInterval(fetchHistory, updateInterval * 1000);
+        }
+
+        // Al cargar la página, obtener el intervalo real desde el backend
+        fetch('/config')
+            .then(res => res.json())
+            .then(cfg => {
+                updateInterval = cfg.update_interval || 5;
+                startAutoUpdate();
+            });
+
+        // Eventos de filtros y búsqueda
+        monthFilter.onchange = renderTable;
+        yearFilter.onchange = renderTable;
+        searchInput.oninput = renderTable;
+
+        // Inicialización
+        fetchHistory();
+
+        // Limpiar filtros
+        document.getElementById('clear-filters-btn').onclick = () => {
+            monthFilter.value = '';
+            yearFilter.value = '';
+            searchInput.value = '';
+            renderTable();
+        };
+
+        // Exportar a CSV
+        document.getElementById('export-csv-btn').onclick = () => {
+            const rows = lastFiltered;
+            if (!rows.length) return alert('No hay datos para exportar.');
+            const headers = ['Hora', 'Temperatura (°C)', 'Humedad (%)', 'CO (ppm)', 'Estado', 'MQ7 (Raw)'];
+            const csvRows = [headers.join(',')];
+            rows.forEach(entry => {
+                csvRows.push([
+                    entry.timestamp || '',
+                    entry.temperatura || '',
+                    entry.humedad || '',
+                    entry.co_ppm || '',
+                    entry.estado_aire || '',
+                    entry.raw_mq7 || ''
+                ].map(val => '"' + String(val).replace(/"/g, '""') + '"').join(','));
+            });
+            const csvContent = csvRows.join('\n');
+            const blob = new Blob([csvContent], {type: 'text/csv'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'historial_calidad_aire.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        };
+    </script>
+</body>
+</html> 
